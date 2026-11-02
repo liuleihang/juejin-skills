@@ -1,0 +1,15 @@
+# 会话凭据与缓存（绝不入库）
+.juejin/
+*.juejin/
+
+# 备份文件（upload-images --in-place 生成）
+*.bak
+
+# 运行时产物
+node_modules/
+logs/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
