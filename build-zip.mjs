@@ -47,7 +47,12 @@ const central = [];
 let offset = 0;
 
 for (const rel of files) {
-  const data = fs.readFileSync(path.join(ROOT, rel));
+  let data = fs.readFileSync(path.join(ROOT, rel));
+  // README 进包时剔除引用 assets/ 的图片行（assets 不随包，避免裂图）；仓库与 GitHub 版不受影响
+  if (rel === 'README.md') {
+    const text = data.toString('utf8').replace(/!\[[^\]]*\]\(assets\/[^)]+\)\s*\n(\s*\n)?/g, '');
+    data = Buffer.from(text, 'utf8');
+  }
   const comp = zlib.deflateRawSync(data);
   const crc = crc32(data);
   const name = Buffer.from(rel, 'utf8');
