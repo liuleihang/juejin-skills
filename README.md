@@ -1,6 +1,10 @@
 # 🔥 juejin-skills — 掘金社区技能包
 
+![juejin-skills 封面](assets/cover-juejin-skills.png)
+
 > 掘金（juejin.cn）社区 Agent 技能包集合。当前包含**文章发布**：支持 Playwright 浏览器登录与会话复用、分类/标签 id 查询、本地图片自动上传为掘金 CDN 链接、草稿优先的发布流程（公开发布需双标志二次确认）。后续会增加热榜、沸点、签到、文章下载等功能。
+>
+> ⚠️ 本项目为社区工具，与掘金官方无关。
 
 ## ✨ 功能特性
 

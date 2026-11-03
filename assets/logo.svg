@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="juejin-skills">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4FA4FF"/>
+      <stop offset="0.45" stop-color="#1E80FF"/>
+      <stop offset="1" stop-color="#0A44C4"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="0.26" cy="0.18" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="0.82" cy="0.86" r="0.7">
+      <stop offset="0" stop-color="#062B7E" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#062B7E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="chev" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.62" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DCEAFF"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#FFF4CC"/>
+      <stop offset="0.45" stop-color="#FFD666"/>
+      <stop offset="1" stop-color="#FFA01B"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="goldGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFC53D" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#FFB020" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFB020" stop-opacity="0"/>
+    </radialGradient>
+    <path id="spark4" d="M0 -1 Q0.13 -0.13 1 0 Q0.13 0.13 0 1 Q-0.13 0.13 -1 0 Q-0.13 -0.13 0 -1 Z"/>
+  </defs>
+
+  <!-- 底板 -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#sheen)"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#vignette)"/>
+
+  <!-- 六边形容器：六段断边 + 顶点节点（模块化技能包） -->
+  <path d="M256 88 L401.5 172 L401.5 340 L256 424 L110.5 340 L110.5 172 Z" fill="#FFFFFF" fill-opacity="0.05"/>
+  <g stroke="#FFFFFF" stroke-opacity="0.34" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <line x1="270.55" y1="96.4" x2="386.95" y2="163.6"/>
+    <line x1="401.5" y1="180.4" x2="401.5" y2="331.6"/>
+    <line x1="386.95" y1="331.6" x2="270.55" y2="415.6"/>
+    <line x1="241.45" y1="415.6" x2="125.05" y2="331.6"/>
+    <line x1="110.5" y1="331.6" x2="110.5" y2="180.4"/>
+    <line x1="125.05" y1="163.6" x2="241.45" y2="96.4"/>
+  </g>
+  <g fill="#FFFFFF" fill-opacity="0.42">
+    <circle cx="256" cy="88" r="7"/>
+    <circle cx="401.5" cy="172" r="7"/>
+    <circle cx="401.5" cy="340" r="7"/>
+    <circle cx="256" cy="424" r="7"/>
+    <circle cx="110.5" cy="340" r="7"/>
+    <circle cx="110.5" cy="172" r="7"/>
+  </g>
+
+  <!-- 三层嵌套箭头（掘金社区标识的原创致敬重绘） -->
+  <circle cx="256" cy="256" r="200" fill="url(#coreGlow)"/>
+  <g stroke="#083B9A" stroke-opacity="0.17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M212 199 L256 233 L300 199" stroke-width="20"/>
+    <path d="M172 235 L256 279 L340 235" stroke-width="20"/>
+    <path d="M136 273 L256 327 L376 273" stroke-width="20"/>
+  </g>
+  <g stroke="url(#chev)" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M212 190 L256 224 L300 190" stroke-width="20"/>
+    <path d="M172 226 L256 270 L340 226" stroke-width="20" stroke-opacity="0.96"/>
+    <path d="M136 264 L256 318 L376 264" stroke-width="20" stroke-opacity="0.92"/>
+  </g>
+
+  <!-- 金色火花 -->
+  <g>
+    <circle cx="382" cy="150" r="46" fill="url(#goldGlow)"/>
+    <use href="#spark4" transform="translate(382 150) scale(27)" fill="url(#gold)"/>
+    <use href="#spark4" transform="translate(150 368) scale(11)" fill="url(#gold)" fill-opacity="0.85"/>
+  </g>
+
+  <!-- 内侧描边 -->
+  <rect x="7" y="7" width="498" height="498" rx="106" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="4"/>
+</svg>

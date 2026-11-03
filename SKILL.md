@@ -4,7 +4,7 @@ display_name: 掘金社区技能包
 display_name_en: Juejin Community Skill Pack
 description: 掘金社区技能包集合。功能点：文章发布（本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询）；后续会增加：热榜、沸点、签到、文章下载等功能。当用户要发布文章到掘金、存掘金草稿、上传配图到掘金图床、登录掘金账号、查询掘金分类标签时使用。
 description_zh: 掘金社区技能包集合。当前包含文章发布：本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询、草稿优先双标志防误发。后续会增加热榜、沸点、签到、文章下载等功能。
-description_en: A collection of Juejin (juejin.cn) community skills. Currently includes article publishing: one-click publish/draft from local Markdown, automatic local-image upload to Juejin CDN, category/tag lookup, and draft-first publishing with double confirmation. More features such as hot list, Boiling Points, check-in and article download are coming soon.
+description_en: "A collection of Juejin (juejin.cn) community skills. Currently includes article publishing: one-click publish/draft from local Markdown, automatic local-image upload to Juejin CDN, category/tag lookup, and draft-first publishing with double confirmation. More features such as hot list, Boiling Points, check-in and article download are coming soon."
 allowed-tools: Bash
 version: 1.3.0
 author: Hone
@@ -22,6 +22,8 @@ agent_created: true
 # Juejin Skills — 掘金社区技能包
 
 当前包含**文章发布**：将 Markdown 文章发布到掘金（juejin.cn）。掘金无官方公开 API，本 skill 通过社区抓包核实的 Web 接口 + Cookie 鉴权实现，采用**草稿优先**安全策略。后续会增加热榜、沸点、签到、文章下载等功能。
+
+> 本项目为社区工具，与掘金官方无关。
 
 ## 前置条件
 
