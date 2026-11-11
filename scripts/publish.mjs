@@ -2,6 +2,8 @@
 // 用法：
 //   node scripts/publish.mjs article.md                       # 只建草稿（默认，最安全）
 //   node scripts/publish.mjs article.md --publish --yes       # 公开发布（必须双标志同时给出）
+//   node scripts/publish.mjs article.md --draft-id <草稿id> --publish --yes
+//         # 发布「网页端已改过的草稿」：跳过重建草稿，正文以网页端为准（md 仅提供分类/标签/摘要/封面）
 // 可选参数：--brief "摘要" --category 前端 --tag "Vue.js,前端" --cover <url> --dry-run --no-upload
 // 优先级：CLI 参数 > 文章 frontmatter > config 默认值（~/.juejin/config.json）
 import fs from 'node:fs';
@@ -26,6 +28,7 @@ function parseArgs(argv) {
     else if (a === '--brief') args.brief = argv[++i];
     else if (a === '--category') args.category = argv[++i];
     else if (a === '--cover') args.cover = argv[++i];
+    else if (a === '--draft-id') args.draftId = argv[++i];
     else if (a === '--tag') args.tags = (args.tags || []).concat(String(argv[++i]).split(','));
     else if (a === '--no-upload') args.noUpload = true; // 跳过本地图片自动上传
     else args._.push(a);
@@ -80,8 +83,15 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const file = args._[0];
   if (!file) {
-    console.error('用法：node scripts/publish.mjs <article.md> [--publish --yes] [--brief 摘要] [--category 前端] [--tag "A,B"] [--cover url] [--dry-run] [--no-upload]');
+    console.error('用法：node scripts/publish.mjs <article.md> [--publish --yes] [--draft-id <草稿id>] [--brief 摘要] [--category 前端] [--tag "A,B"] [--cover url] [--dry-run] [--no-upload]');
     process.exit(1);
+  }
+
+  // --draft-id：发布「网页端已改过的草稿」。默认流程每次都会先重建草稿，用本地 md
+  // 覆盖网页端修改；本模式跳过 draftCreate 与本地正文改写，正文完全以网页端草稿为准。
+  const useExistingDraft = Boolean(args.draftId);
+  if (useExistingDraft && !/^\d+$/.test(String(args.draftId))) {
+    throw new Error(`--draft-id 必须是纯数字草稿 id，收到：${args.draftId}`);
   }
 
   // 文件读取安全约束：仅 .md/.markdown、大小 <= 2MiB
@@ -106,6 +116,10 @@ async function main() {
   console.log(`[publish] 摘要（${brief.length} 字）：${brief}`);
   if (brief.length < CFG.defaults.briefMin) {
     console.warn(`[publish] ⚠️ 摘要不足 ${CFG.defaults.briefMin} 字，掘金接口可能拒绝；建议用 --brief 显式提供 ${CFG.defaults.briefMin}-${CFG.defaults.briefMax} 字摘要`);
+  }
+  if (useExistingDraft) {
+    console.log(`[publish] --draft-id 模式：跳过本地图片上传与正文改写，发布正文以网页端草稿 ${args.draftId} 为准`);
+    console.log('[publish] 本地 md 仅用于提供分类 / 标签 / 摘要 / 封面等元数据');
   }
 
   // 分类/标签 id 解析（缓存超期自动刷新；未命中强制刷新自愈一次，仍失败才报错）
@@ -144,10 +158,10 @@ async function main() {
     }
   }
 
-  // 本地图片处理：默认自动上传到掘金图床并改写为 CDN 链接（--no-upload 跳过）
+  // 本地图片处理：默认自动上传到掘金图床并改写为 CDN 链接（--no-upload / --draft-id 跳过）
   let finalBody = body.trim();
   const locals = scanLocalImages(md, path.dirname(abs));
-  if (locals.length && !args.noUpload) {
+  if (locals.length && !args.noUpload && !useExistingDraft) {
     console.log(`[publish] 发现 ${locals.length} 个本地图片引用`);
     if (args.dryRun) {
       for (const im of locals) {
@@ -169,6 +183,8 @@ async function main() {
     }
   }
 
+  // --draft-id 模式下 mark_content 不会被提交（发布请求只带 draft_id 与元数据），
+  // 本地正文仅用于摘要兜底，绝不会覆盖网页端草稿。
   const payload = {
     category_id: cat ? cat.id : '<dry-run>',
     tag_ids: tagIds,
@@ -184,6 +200,9 @@ async function main() {
 
   if (args.dryRun) {
     console.log('[publish] --dry-run：以下为将提交的请求体（未发起网络请求）：');
+    if (useExistingDraft) {
+      console.log(`[publish] --draft-id 模式：不会重建草稿，实际发布正文以网页端草稿 ${args.draftId} 为准`);
+    }
     payload.mark_content = payload.mark_content.slice(0, 200) + ` ...(共 ${finalBody.length} 字符)`;
     console.log(JSON.stringify(payload, null, 2));
     return;
@@ -193,22 +212,31 @@ async function main() {
   if (!cookies.length) throw new Error(`未找到会话，请先运行：node scripts/login.mjs`);
   const cookie = cookiesToHeader(cookies);
 
-  // 第 1 步：创建草稿
-  const draft = await api(ENDPOINTS.draftCreate, {
-    method: 'POST', body: payload, cookie,
-  });
-  if (!draft || draft.err_no !== 0) {
-    console.error(`[publish] 草稿创建失败：err_no=${draft && draft.err_no} err_msg=${draft && draft.err_msg}`);
-    process.exit(2);
+  // 第 1 步：草稿（默认新建；--draft-id 时复用网页端已有草稿，跳过重建）
+  let draftId;
+  if (useExistingDraft) {
+    draftId = String(args.draftId);
+    console.log(`[publish] 复用网页端草稿：draft_id=${draftId}（跳过重建，网页端正文不会被本地文件覆盖）`);
+    console.log(`[publish] 可在网页端查看：https://juejin.cn/editor/drafts/${draftId}`);
+  } else {
+    const draft = await api(ENDPOINTS.draftCreate, {
+      method: 'POST', body: payload, cookie,
+    });
+    if (!draft || draft.err_no !== 0) {
+      console.error(`[publish] 草稿创建失败：err_no=${draft && draft.err_no} err_msg=${draft && draft.err_msg}`);
+      process.exit(2);
+    }
+    draftId = draft.data && draft.data.id;
+    console.log(`[publish] 草稿已创建：draft_id=${draftId}`);
+    console.log(`[publish] 可在网页端查看：https://juejin.cn/editor/drafts/${draftId}`);
   }
-  const draftId = draft.data && draft.data.id;
-  console.log(`[publish] 草稿已创建：draft_id=${draftId}`);
-  console.log(`[publish] 可在网页端查看：https://juejin.cn/editor/drafts/${draftId}`);
 
-  // 第 2 步：公开发布（双标志互锁，缺一即止于草稿）
+  // 第 2 步：公开发布（双标志互锁，缺一即止于草稿/预览）
   const publishPublicly = args.publish === true && args.yes === true;
   if (!publishPublicly) {
-    console.log('[publish] 已止步于草稿（默认安全策略）。确认无误后加 --publish --yes 公开发布。');
+    console.log(useExistingDraft
+      ? '[publish] 已止步于预览（默认安全策略）。确认网页端草稿无误后加 --publish --yes 公开发布。'
+      : '[publish] 已止步于草稿（默认安全策略）。确认无误后加 --publish --yes 公开发布。');
     return;
   }
 

@@ -1,10 +1,15 @@
 # 🔥 juejin-skills — 掘金社区技能包
 
-![juejin-skills 封面](assets/cover-juejin-skills.png)
+![juejin-skills 封面](assets/cover-juejin-skills-brand.png)
 
-> 掘金（juejin.cn）社区 Agent 技能包集合。当前包含**文章发布**：支持 Playwright 浏览器登录与会话复用、分类/标签 id 查询、本地图片自动上传为掘金 CDN 链接、草稿优先的发布流程（公开发布需双标志二次确认）。后续会增加热榜、沸点、签到、文章下载等功能。
+> 掘金（juejin.cn）社区 Agent 技能包集合。当前包含**文章发布**（Playwright 登录与会话复用、分类/标签查询、本地图片自动上传掘金 CDN、草稿优先双标志防误发）与**掘金热榜**（公开只读，拉取最近最火的文章，支持分类筛选与条数控制）。后续会增加沸点、签到、文章下载等功能。
 >
 > ⚠️ 本项目为社区工具，与掘金官方无关。
+
+## 📚 系列文章
+
+- ① [我把「自动发文章到掘金」做成了一个 Agent 技能：juejin-skills](https://juejin.cn/post/7703084122659504128)
+- ② [juejin-skills 系列 ②：我把「看掘金热榜」也做成了 Agent 技能](https://juejin.cn/post/7706722811200471083)
 
 ## ✨ 功能特性
 
@@ -14,6 +19,15 @@
 - 摘要长度 **50–100 字**（掘金硬性要求）自动补齐，不满足时警告并建议用 `--brief` 显式提供
 - **草稿优先**：默认只创建草稿，把草稿链接交给用户确认格式后再公开发布
 - **双标志互锁**：`--publish` 与 `--yes` 必须同时出现才会公开发布，脚本内硬编码互锁，防止误发
+- **网页端改稿不丢失**：在掘金网页端改过草稿后，用 `--draft-id <草稿id> --publish --yes` 发布，跳过重建草稿，正文以网页端为准
+
+### 🔥 掘金热榜
+
+- 一句话拉取掘金**最近最火的文章**，公开接口只读，**无需登录**
+- 支持综合榜 / 分类筛选（前端、后端、人工智能等）、`--limit` 条数控制（默认 20，上限 50）
+- 输出排名、标题、作者、热度值、浏览 / 点赞 / 收藏 / 评论数与文章链接
+- `--json` 输出结构化数据供 Agent / 管道消费；`--categories` 列出可用分类
+- 接口不返回文章摘要（故不提供摘要字段）；榜单实时性高，不做本地缓存
 
 ### 🖼️ 本地图片自动上传
 
@@ -54,13 +68,15 @@
   <tr><td nowrap><b>首次登录</b></td><td><code>node scripts/login.mjs</code>（弹浏览器，人工登录，自动存会话）</td></tr>
   <tr><td nowrap><b>会话体检</b></td><td><code>node scripts/check.mjs</code>（失效则重新 login）</td></tr>
   <tr><td nowrap><b>分类/标签查询</b></td><td><code>node scripts/tags.mjs</code>（全量翻页并缓存）；<code>node scripts/tags.mjs 前端</code>（按名查 id）</td></tr>
+  <tr><td nowrap><b>掘金热榜</b></td><td><code>node scripts/hot.mjs</code>（综合榜 20 条，无需登录）；<code>node scripts/hot.mjs 前端 --limit 10</code>（分类筛选）；<code>--json</code> 输出 JSON；<code>--categories</code> 列分类</td></tr>
   <tr><td nowrap><b>图片上传</b></td><td><code>node scripts/upload-images.mjs article.md</code>（输出 <code>&lt;name&gt;.juejin.md</code>）；<code>--in-place</code> 原地改写（留 <code>.bak</code>）；<code>--dry-run</code> 只扫描</td></tr>
   <tr><td nowrap><b>存草稿（默认）</b></td><td><code>node scripts/publish.mjs article.md</code>（检测到本地图片时自动上传并改写）</td></tr>
   <tr><td nowrap><b>试算请求体</b></td><td><code>node scripts/publish.mjs article.md --dry-run</code>（不联网）</td></tr>
   <tr><td nowrap><b>公开发布</b></td><td><code>node scripts/publish.mjs article.md --publish --yes</code>（双标志缺一不可）</td></tr>
+  <tr><td nowrap><b>发布网页端草稿</b></td><td><code>node scripts/publish.mjs article.md --draft-id &lt;草稿id&gt; --publish --yes</code>（跳过重建草稿，正文以网页端为准，md 仅提供分类/标签/摘要/封面）</td></tr>
 </table>
 
-`publish.mjs` 可选参数：`--brief "摘要"`、`--category 前端`、`--tag "Vue.js,前端"`、`--cover <url>`、`--no-upload`（跳过图片自动上传）。
+`publish.mjs` 可选参数：`--brief "摘要"`、`--category 前端`、`--tag "Vue.js,前端"`、`--cover <url>`、`--draft-id <草稿id>`（发布网页端草稿，跳过重建）、`--no-upload`（跳过图片自动上传）。
 
 ### 自然语言使用示例（Agent 内）
 
@@ -69,6 +85,7 @@
 | 功能 | 示例指令 |
 |---|---|
 | 登录掘金 | 「登录掘金账号」 |
+| 看热榜 | 「看看今天掘金前端热榜」 |
 | 查标签 id | 「掘金有哪些标签？Vue.js 的 id 是多少？」 |
 | 上传配图 | 「把这篇文章里的本地图片上传到掘金图床」 |
 | 存草稿 | 「把 ./article.md 存为掘金草稿，分类前端，标签 Vue.js」 |
@@ -118,6 +135,7 @@ juejin-skills/
     ├── login.mjs            # Playwright 浏览器登录，会话存 ~/.juejin/session.json
     ├── check.mjs            # 会话有效性体检
     ├── tags.mjs             # 分类/标签全量翻页查询与缓存
+    ├── hot.mjs              # 掘金热榜（公开只读，无需登录，支持分类/条数/JSON）
     ├── upload-images.mjs    # ImageX 三段式传图 + 正文改写（纯函数可复用）
     └── publish.mjs          # frontmatter 解析 + 图片自动上传 + 草稿/发布（双标志互锁）
 ```

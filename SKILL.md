@@ -2,26 +2,30 @@
 name: juejin-skills
 display_name: 掘金社区技能包
 display_name_en: Juejin Community Skill Pack
-description: 掘金社区技能包集合。功能点：文章发布（本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询）；后续会增加：热榜、沸点、签到、文章下载等功能。当用户要发布文章到掘金、存掘金草稿、上传配图到掘金图床、登录掘金账号、查询掘金分类标签时使用。
-description_zh: 掘金社区技能包集合。当前包含文章发布：本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询、草稿优先双标志防误发。后续会增加热榜、沸点、签到、文章下载等功能。
-description_en: "A collection of Juejin (juejin.cn) community skills. Currently includes article publishing: one-click publish/draft from local Markdown, automatic local-image upload to Juejin CDN, category/tag lookup, and draft-first publishing with double confirmation. More features such as hot list, Boiling Points, check-in and article download are coming soon."
+description: 掘金社区技能包集合。功能点：文章发布（本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询）、掘金热榜（最近最火的文章，支持综合/分类筛选与条数控制）；后续会增加：沸点、签到、文章下载等功能。当用户要发布文章到掘金、存掘金草稿、上传配图到掘金图床、登录掘金账号、查询掘金分类标签、查看掘金热榜或热门文章时使用。
+description_zh: 掘金社区技能包集合。当前包含文章发布：本地 Markdown 一键发布/存草稿、本地图片自动上传掘金图床、分类/标签查询、草稿优先双标志防误发；以及掘金热榜：公开只读，拉取最近最火的文章，支持分类筛选与条数控制。后续会增加沸点、签到、文章下载等功能。
+description_en: "A collection of Juejin (juejin.cn) community skills. Currently includes article publishing: one-click publish/draft from local Markdown, automatic local-image upload to Juejin CDN, category/tag lookup, and draft-first publishing with double confirmation; and the Juejin hot list: public read-only, fetch the most popular articles with category filter and limit. More features such as Boiling Points, check-in and article download are coming soon."
 allowed-tools: Bash
-version: 1.3.0
+version: 1.4.0
 author: Hone
 examples_zh:
   - "把 ./article.md 存为掘金草稿，分类前端，标签 Vue.js"
   - "把这篇文章里的本地图片上传到掘金图床"
   - "登录掘金账号"
+  - "看看今天掘金热榜前 10 篇文章"
+  - "前端分类最近最火的文章有哪些"
 examples_en:
   - "Save ./article.md as a Juejin draft, category 前端, tags Vue.js"
   - "Upload the local images in this article to Juejin image host"
   - "Log in to my Juejin account"
+  - "Show me today's top 10 Juejin hot articles"
+  - "What are the hottest frontend articles on Juejin"
 agent_created: true
 ---
 
 # Juejin Skills — 掘金社区技能包
 
-当前包含**文章发布**：将 Markdown 文章发布到掘金（juejin.cn）。掘金无官方公开 API，本 skill 通过社区抓包核实的 Web 接口 + Cookie 鉴权实现，采用**草稿优先**安全策略。后续会增加热榜、沸点、签到、文章下载等功能。
+当前包含**文章发布**与**掘金热榜**：将 Markdown 文章发布到掘金（juejin.cn），或拉取掘金最近最火的文章。掘金无官方公开 API，本 skill 通过社区抓包核实的 Web 接口实现；发文需 Cookie 鉴权并采用**草稿优先**安全策略，热榜为公开只读接口、无需登录。后续会增加沸点、签到、文章下载等功能。
 
 > 本项目为社区工具，与掘金官方无关。
 
@@ -59,10 +63,23 @@ agent_created: true
 | 首次登录 | `node scripts/login.mjs`（弹浏览器，人工登录，自动存会话） |
 | 会话体检 | `node scripts/check.mjs`（失效则重新 login，Cookie 有效期约 30 天） |
 | 分类/标签查询 | `node scripts/tags.mjs`（全量翻页拉取约 700 标签并缓存）；`node scripts/tags.mjs 前端`（按名查询 id） |
+| **掘金热榜** | `node scripts/hot.mjs`（综合榜 20 条，无需登录）；`node scripts/hot.mjs 前端 --limit 10`（分类筛选）；`--json` 输出 JSON；`--categories` 列分类 |
 | **图片上传** | `node scripts/upload-images.mjs article.md`（本地图片 → 掘金 CDN，输出 `<name>.juejin.md`）；`--in-place` 原地改写（留 `.bak`）；`--dry-run` 只扫描 |
 | **存草稿（默认）** | `node scripts/publish.mjs article.md`（检测到本地图片时**自动上传并改写**，`--no-upload` 跳过） |
 | 试算请求体 | `node scripts/publish.mjs article.md --dry-run`（不联网） |
 | **公开发布** | `node scripts/publish.mjs article.md --publish --yes`（双标志缺一不可） |
+| **发布网页端草稿** | `node scripts/publish.mjs article.md --draft-id <草稿id> --publish --yes`（**跳过重建草稿**，正文以网页端为准，md 仅提供分类/标签/摘要/封面） |
+
+## 掘金热榜（无需登录）
+
+- **触发词**：「掘金热榜」「今天掘金热门文章」「前端热榜有哪些」。
+- **命令**：`node scripts/hot.mjs [分类] [--limit N] [--json] [--categories]`；默认综合榜热门 20 条，上限 50 条。
+- **分类**：`--categories` 列出可用分类；`综合` / `全部` / `all` 走 `category_id=1`（该值不在掘金分类列表里，属榜单约定值）。
+- **输出字段**：排名、标题、作者、热度值、浏览/点赞/收藏/评论数、文章链接；`--json` 输出结构化数据供 Agent 或管道消费。
+- **无摘要**：掘金 `article_rank` 接口**不返回文章摘要**，不得向用户承诺或编造摘要内容。
+- **接口**：`GET https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot&aid=2608&spider=0`（2026-11-11 实机核实，公开、无需 Cookie）。
+- **只读安全**：不写任何用户数据、不落缓存、单次请求、无循环；`err_no != 0` 原样上报，不盲目重试。
+- **`--type new` 待核实**：该参数本次实测返回 Internal Server Error，保留入口但不作能力承诺。
 
 ## 发布工作流（agent 执行时严格遵循）
 
@@ -71,11 +88,12 @@ agent_created: true
 3. **文章格式**：支持 frontmatter 字段 `title` / `brief` / `category` / `tags`（逗号分隔）/ `cover`；无 frontmatter 时取正文首个 `# 一级标题` 作标题。摘要（`brief_content`）**50–100 字是掘金硬性要求**，脚本会自动补齐，但不满足时优先让用户用 `--brief` 显式给出。
 4. **本地图片**：`publish.mjs` 自动扫描正文行内图片 `![alt](path)`，走字节 ImageX 三段式链路上传（gen_token STS → ApplyImageUpload SigV4 签名 → POST 直传 tos 带 CRC32 校验 → CommitImageUpload → get_img_url），把编辑器同款签名 URL 写入正文（掘金渲染层动态重签，已实测发布后 3 图全部 HTTP 200）；任何一张失败即**中止发布**。仅支持 png/jpg/jpeg/gif/webp/svg/bmp，单张默认 ≤5MiB。
 5. **先草稿**：一律先 `publish.mjs article.md`（默认只建草稿），把草稿链接给用户确认格式。
-6. **再发布**：用户在会话中**明确确认**后，才加 `--publish --yes` 公开发布；向用户复述将要发布的标题、分类、标签后再执行。
+6. **再发布**：用户在会话中**明确确认**后，才加 `--publish --yes` 公开发布；向用户复述将要发布的标题、分类、标签后再执行。**若用户明确说改的是网页端草稿，必须改用 `--draft-id <草稿id> --publish --yes`**——默认的 `--publish --yes` 每次都会先重建草稿，用本地 md 覆盖网页端修改；`--draft-id` 模式跳过重建，正文以网页端为准（本地 md 只提供分类/标签/摘要/封面）。拿不准改的是哪一边时，先问用户，不要用文件 mtime 推断。
 
 ## 安全纪律（不可违反）
 
 - **草稿优先**：`--publish` 与 `--yes` 必须同时出现才会公开发布，这是脚本内的互锁，agent 不得诱导绕过；
+- **网页端改稿不被覆盖**：用户明确说改的是网页端草稿时，**禁止**用默认 `--publish --yes`（会先重建草稿、用本地 md 覆盖网页端正文）；必须改用 `--draft-id <草稿id> --publish --yes`。不确定改动在哪一侧时先问用户，不得靠文件 mtime 推断；
 - **单次一篇**：一次调用只处理一个文件，不做无人值守批量发布（频控与风控风险）；
 - **凭据脱敏**：Cookie 只存 `~/.juejin/session.json`，日志、回复、截图中一律不得出现其内容；
 - **非官方接口**：掘金无公开 API 文档，接口可能变更；任何 `err_no != 0` 原样报告给用户，不要猜测重试策略之外的动作。
@@ -97,6 +115,7 @@ agent_created: true
 - 发布文章：`POST https://api.juejin.cn/content_api/v1/article/publish`（入参 `draft_id`）
 - 会话校验：`GET https://api.juejin.cn/user_api/v1/user/get`（✅ 已实测成功）
 - 分类列表：`GET https://api.juejin.cn/tag_api/v1/query_category_briefs`（✅ 已实测成功）
+- 掘金热榜：`GET https://api.juejin.cn/content_api/v1/content/article_rank?category_id={id}&type=hot&aid=2608&spider=0`（✅ 2026-11-11 实机核实，公开免登录；`data[]` 含 `content.{content_id,title}`、`author.name`、`content_counter.{hot_rank,view,like,collect,comment_count}`；**不返回摘要**；综合榜 50 条）
 - 标签列表：`POST https://api.juejin.cn/tag_api/v1/query_tag_list`（✅ 已实测；`{cursor:"0", limit:100}` 翻页，data 为数组，元素 `{tag_id, tag:{tag_name}}`；**cate_id 参数实际不过滤**，需全量翻页；旧 `query_category_tags` 已下线返回「请求路由不存在」）
 - 草稿请求体：`{category_id, tag_ids[], title, brief_content, edit_type:10, mark_content, cover_image, link_url:"", html_content:"deprecated", theme_ids:[]}`
 - ~~图片上传：`POST /images_upload/v1/create`~~（**已下线 404**）。现行链路（✅ 已实现并发布实测通过）：`GET /imagex/v2/gen_token?aid=2608&uuid=<19位数字>&client=web`（Cookie）拿 STS → `imagex.bytedanceapi.com?Action=ApplyImageUpload&Version=2018-08-01&ServiceId=73owjymdk6`（**AWS SigV4**，Credential=AK/<date>/cn-north-1/imagex/aws4_request，SignedHeaders=x-amz-date;x-amz-security-token）→ `POST https://<uploadHost>/<StoreUri>`（头 `authorization: <StoreInfos[0].Auth>`、`Content-CRC32: <8位hex>`，缺 CRC32 报 MismatchChecksum 4007）→ `POST ?Action=CommitImageUpload&SessionKey=...`（偶发 201007 bad gateway，重试一次）→ `GET /imagex/v2/get_img_url?...&img_type=private` 返回 `data.main_url`（编辑器同款签名 URL，写进 mark_content 即可）

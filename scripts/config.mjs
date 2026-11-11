@@ -21,6 +21,11 @@ const DEFAULTS = {
   tagCache: {
     maxAgeDays: 7,           // 标签缓存最长有效期；超期或解析失败时自动刷新一次再兜底报错
   },
+  hot: {
+    type: 'hot',             // hot=热门；new 待实机复核，暂不作能力承诺
+    defaultLimit: 20,        // 默认展示条数
+    maxLimit: 50,            // 综合榜单次最多返回 50 条，防误设超限
+  },
   imageUpload: {
     // 2026-10-23 Playwright 实测：字节 ImageX 三段式上传链路（旧单接口 images_upload/v1/create 已下线）
     genToken: 'https://api.juejin.cn/imagex/v2/gen_token',
@@ -48,6 +53,7 @@ function loadUserConfig() {
     merged.defaults = { ...DEFAULTS.defaults, ...(raw.defaults || {}) };
     merged.imageUpload = { ...DEFAULTS.imageUpload, ...(raw.imageUpload || {}) };
     merged.tagCache = { ...DEFAULTS.tagCache, ...(raw.tagCache || {}) };
+    merged.hot = { ...DEFAULTS.hot, ...(raw.hot || {}) };
     return merged;
   } catch {
     return DEFAULTS; // 无配置文件时使用默认值
@@ -63,6 +69,7 @@ export const ENDPOINTS = {
   userGet: `${API_BASE}/user_api/v1/user/get`,
   categoryBriefs: `${API_BASE}/tag_api/v1/query_category_briefs`,
   tagList: `${API_BASE}/tag_api/v1/query_tag_list`, // 2026-10-23 实测：旧 query_category_tags 已下线
+  articleRank: `${API_BASE}/content_api/v1/content/article_rank`, // 2026-11-11 实机核实：公开 GET，无需 Cookie
 };
 
 // 部分端点对 UA 敏感，伪装成常规浏览器请求

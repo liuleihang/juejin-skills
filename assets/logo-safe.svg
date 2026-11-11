@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="juejin-skills">
+  <defs>
+    <linearGradient id="bgSafe" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4FA6FF"/>
+      <stop offset="0.45" stop-color="#1E80FF"/>
+      <stop offset="1" stop-color="#0B4FC4"/>
+    </linearGradient>
+    <linearGradient id="plateTop" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAF6FF"/>
+    </linearGradient>
+    <linearGradient id="goldSafe" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#FFF4CC"/>
+      <stop offset="0.45" stop-color="#FFD666"/>
+      <stop offset="1" stop-color="#FFA01B"/>
+    </linearGradient>
+    <radialGradient id="goldGlowSafe" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFC53D" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#FFB020" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFB020" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="aiShadowSafe" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#062E7A" flood-opacity="0.55"/>
+    </filter>
+    <path id="spark4Safe" d="M0 -1 Q0.13 -0.13 1 0 Q0.13 0.13 0 1 Q-0.13 0.13 -1 0 Q-0.13 -0.13 0 -1 Z"/>
+  </defs>
+
+  <!-- 底板：紫罗兰渐变（不使用 #1E80FF） -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bgSafe)"/>
+
+  <!-- 六边形容器 -->
+  <path d="M 256 88 L 401.5 172 L 401.5 340 L 256 424 L 110.5 340 L 110.5 172 Z" fill="#FFFFFF" fill-opacity="0.05"/>
+  <g stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <line x1="273.32" y1="98.00" x2="384.18" y2="162.00"/>
+    <line x1="401.50" y1="192.00" x2="401.50" y2="320.00"/>
+    <line x1="384.18" y1="350.00" x2="273.32" y2="414.00"/>
+    <line x1="238.68" y1="414.00" x2="127.82" y2="350.00"/>
+    <line x1="110.50" y1="320.00" x2="110.50" y2="192.00"/>
+    <line x1="127.82" y1="162.00" x2="238.68" y2="98.00"/>
+  </g>
+  <g fill="#FFFFFF" fill-opacity="0.34">
+    <circle cx="256" cy="88" r="7"/>
+    <circle cx="401.5" cy="172" r="7"/>
+    <circle cx="401.5" cy="340" r="7"/>
+    <circle cx="256" cy="424" r="7"/>
+    <circle cx="110.5" cy="340" r="7"/>
+    <circle cx="110.5" cy="172" r="7"/>
+  </g>
+
+  <!-- 模块堆叠：三层等距菱形（技能包分层，非掘金图形） -->
+  <g>
+    <path d="M 280.47 286.84 L 361.53 325.16 Q 376.00 332.00 361.53 338.84 L 280.47 377.16 Q 266.00 384.00 251.53 377.16 L 170.47 338.84 Q 156.00 332.00 170.47 325.16 L 251.53 286.84 Q 266.00 280.00 280.47 286.84 Z" fill="#062E7A" fill-opacity="0.18"/>
+    <path d="M 270.41 274.95 L 353.59 315.05 Q 368.00 322.00 353.59 328.95 L 270.41 369.05 Q 256.00 376.00 241.59 369.05 L 158.41 328.95 Q 144.00 322.00 158.41 315.05 L 241.59 274.95 Q 256.00 268.00 270.41 274.95 Z" fill="#FFFFFF" fill-opacity="0.60"/>
+    <path d="M 270.41 210.95 L 353.59 251.05 Q 368.00 258.00 353.59 264.95 L 270.41 305.05 Q 256.00 312.00 241.59 305.05 L 158.41 264.95 Q 144.00 258.00 158.41 251.05 L 241.59 210.95 Q 256.00 204.00 270.41 210.95 Z" fill="#FFFFFF" fill-opacity="0.82"/>
+    <path d="M 270.41 144.95 L 353.59 185.05 Q 368.00 192.00 353.59 198.95 L 270.41 239.05 Q 256.00 246.00 241.59 239.05 L 158.41 198.95 Q 144.00 192.00 158.41 185.05 L 241.59 144.95 Q 256.00 138.00 270.41 144.95 Z" fill="url(#plateTop)"/>
+  </g>
+
+  <!-- 金色火花 -->
+  <g>
+    <circle cx="382" cy="150" r="56" fill="url(#goldGlowSafe)"/>
+    <use href="#spark4Safe" transform="translate(382 150) scale(34)" fill="url(#goldSafe)"/>
+    <use href="#spark4Safe" transform="translate(150 368) scale(11)" fill="url(#goldSafe)" fill-opacity="0.85"/>
+  </g>
+
+  <!-- AI 标识 -->
+  <text x="405" y="436" text-anchor="middle" font-family="'Arial Black', Arial, 'Segoe UI', sans-serif" font-weight="900" font-size="56" letter-spacing="1.5" fill="#FFFFFF" filter="url(#aiShadowSafe)">AI</text>
+</svg>
