@@ -11,15 +11,11 @@ author: Hone
 examples_zh:
   - "把 ./article.md 存为掘金草稿，分类前端，标签 Vue.js"
   - "把这篇文章里的本地图片上传到掘金图床"
-  - "登录掘金账号"
   - "看看今天掘金热榜前 10 篇文章"
-  - "前端分类最近最火的文章有哪些"
 examples_en:
   - "Save ./article.md as a Juejin draft, category 前端, tags Vue.js"
   - "Upload the local images in this article to Juejin image host"
-  - "Log in to my Juejin account"
   - "Show me today's top 10 Juejin hot articles"
-  - "What are the hottest frontend articles on Juejin"
 agent_created: true
 ---
 

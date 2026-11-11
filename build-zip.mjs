@@ -14,6 +14,28 @@ const OUT = path.join(OUT_DIR, 'juejin-skills.zip');
 const EXCLUDE = new Set(['.git', 'node_modules', 'logs', '.juejin', 'build', 'assets']);
 const EXCLUDE_EXT = new Set(['.bak']);
 
+// WorkBuddy 平台上限：examples_zh / examples_en 各最多 3 条，超出会在上传解析阶段直接失败。
+const MAX_EXAMPLES = 3;
+
+function validateFrontmatter(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) throw new Error('SKILL.md 缺少 frontmatter');
+  const lines = m[1].split(/\r?\n/);
+  const counts = {};
+  for (const key of ['examples_zh', 'examples_en']) {
+    const start = lines.findIndex((l) => l.startsWith(key + ':'));
+    if (start < 0) throw new Error(`frontmatter 缺少 ${key}`);
+    let count = 0;
+    for (let i = start + 1; i < lines.length; i++) {
+      if (/^\S/.test(lines[i])) break;
+      if (/^\s+-\s/.test(lines[i])) count++;
+    }
+    counts[key] = count;
+    if (count > MAX_EXAMPLES) throw new Error(`${key} 有 ${count} 个示例，超过平台上限 ${MAX_EXAMPLES} 个`);
+  }
+  return counts;
+}
+
 const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -25,6 +47,17 @@ const files = [];
   }
 })(ROOT);
 files.sort();
+
+// 校验必须在写 zip 之前：失败时不覆盖上一次的合规包
+let counts;
+try {
+  counts = validateFrontmatter(fs.readFileSync(path.join(ROOT, 'SKILL.md'), 'utf8'));
+} catch (e) {
+  console.error(`✗ frontmatter 校验失败：${e.message}`);
+  process.exit(1);
+}
+console.log(`✓ frontmatter：examples_zh=${counts.examples_zh}, examples_en=${counts.examples_en}（上限 ${MAX_EXAMPLES}）`);
+if (process.argv.includes('--check-only')) process.exit(0);
 
 // CRC32
 const CRC = (() => {
