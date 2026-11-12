@@ -42,15 +42,27 @@ agent_created: true
   "timeoutMs": 30000,
   "sessionDirName": ".juejin",
   "defaults": { "category": "前端", "briefMin": 50, "briefMax": 100 },
-  "imageUpload": {
-    "endpoint": "https://api.juejin.cn/images_upload/v1/create",
-    "query": { "uid": "", "client_id": "2608", "token": "", "sign": "" },
-    "fieldName": "file",
-    "maxSizeMb": 5,
-    "uploadGapMs": 300
+  "imageUpload": { "maxSizeMb": 5, "uploadGapMs": 300 },
+  "frontmatter": { "enabled": true, "strict": false }
+}
+```
+
+**frontmatter 检查规则可自定义**：`frontmatter.required` 默认校验 `title / date / description / category / tags` 五项，缺失时打印建议、兼容别名与可粘贴片段，**只提示、不改写用户文章**。整体替换该数组即可增删字段、改权威名或改别名（下例把摘要权威名换回 `summary`）：
+
+```json
+{
+  "frontmatter": {
+    "enabled": true,
+    "strict": false,
+    "required": [
+      { "key": "title", "label": "标题", "aliases": ["name"], "publish": true, "suggestion": "必填", "example": "title: 标题" },
+      { "key": "summary", "label": "摘要", "aliases": ["description", "brief"], "publish": true, "suggestion": "50–100 字", "example": "summary: 一句话概括" }
+    ]
   }
 }
 ```
+
+> `imageUpload` 的可覆盖项只有 `maxSizeMb` / `uploadGapMs` 等运行时参数；上传端点与签名常量写在 `config.mjs` 内，勿在 `config.json` 里配置旧的 `images_upload/v1/create`（该接口已下线 404）。
 
 ## 命令速查
 
@@ -59,6 +71,7 @@ agent_created: true
 | 首次登录 | `node scripts/login.mjs`（弹浏览器，人工登录，自动存会话） |
 | 会话体检 | `node scripts/check.mjs`（失效则重新 login，Cookie 有效期约 30 天） |
 | 分类/标签查询 | `node scripts/tags.mjs`（全量翻页拉取约 700 标签并缓存）；`node scripts/tags.mjs 前端`（按名查询 id） |
+| **元信息检查** | `node scripts/frontmatter.mjs article.md`（缺字段给建议，只提示不改写）；`--json` 输出结构化报告；`--require title,description` 单次自定义；`--strict` 缺失即 exit 2 |
 | **掘金热榜** | `node scripts/hot.mjs`（综合榜 20 条，无需登录）；`node scripts/hot.mjs 前端 --limit 10`（分类筛选）；`--json` 输出 JSON；`--categories` 列分类 |
 | **图片上传** | `node scripts/upload-images.mjs article.md`（本地图片 → 掘金 CDN，输出 `<name>.juejin.md`）；`--in-place` 原地改写（留 `.bak`）；`--dry-run` 只扫描 |
 | **存草稿（默认）** | `node scripts/publish.mjs article.md`（检测到本地图片时**自动上传并改写**，`--no-upload` 跳过） |
@@ -81,7 +94,7 @@ agent_created: true
 
 1. **会话体检**：先跑 `check.mjs`；失败引导用户执行 `login.mjs` 并等用户完成浏览器登录。
 2. **id 缓存**：缓存超期（默认 7 天，`config.json` 的 `tagCache.maxAgeDays` 可调）会自动全量刷新；分类/标签解析未命中时也会强制刷新自愈一次，仍失败才报错。手动刷新：`node scripts/tags.mjs`。
-3. **文章格式**：支持 frontmatter 字段 `title` / `brief` / `category` / `tags`（逗号分隔）/ `cover`；无 frontmatter 时取正文首个 `# 一级标题` 作标题。摘要（`brief_content`）**50–100 字是掘金硬性要求**，脚本会自动补齐，但不满足时优先让用户用 `--brief` 显式给出。
+3. **文章格式检查（必做）**：读到本地 `.md` 后、**发起任何网络请求之前**，必须运行 `node scripts/frontmatter.mjs <article.md>`，**不得凭 Agent 自己 Read 的结果判断字段是否齐全**。规范字段为 `title` / `date` / `description` / `category` / `tags`（另有可选 `cover`）；`summary` / `brief` / `brief_content` 是 `description` 的兼容别名，`tags` 支持 YAML 数组 `[a, b]` 与逗号串。`publish.mjs` 内部也会自动跑同一份检查并把别名折叠为规范 key，默认只提示不阻断。报告有缺失时，向用户复述「缺哪项 / 建议 / 可粘贴片段」，由用户决定是否补齐；用户要求严格模式时用 `--strict`，或把 `config.json` 的 `frontmatter.strict` 设为 `true`。检查规则可由用户自定义（`frontmatter.required` 数组整体替换，或本次用 `--require a,b`）。`date` 仅作本地归档规范，**不参与掘金发布**。无 frontmatter 时标题取正文首个 `# 一级标题`；摘要（`brief_content`）**50–100 字是掘金硬性要求**，脚本会自动补齐，但不满足时优先让用户用 `--description` 显式给出。
 4. **本地图片**：`publish.mjs` 自动扫描正文行内图片 `![alt](path)`，走字节 ImageX 三段式链路上传（gen_token STS → ApplyImageUpload SigV4 签名 → POST 直传 tos 带 CRC32 校验 → CommitImageUpload → get_img_url），把编辑器同款签名 URL 写入正文（掘金渲染层动态重签，已实测发布后 3 图全部 HTTP 200）；任何一张失败即**中止发布**。仅支持 png/jpg/jpeg/gif/webp/svg/bmp，单张默认 ≤5MiB。
 5. **先草稿**：一律先 `publish.mjs article.md`（默认只建草稿），把草稿链接给用户确认格式。
 6. **再发布**：用户在会话中**明确确认**后，才加 `--publish --yes` 公开发布；向用户复述将要发布的标题、分类、标签后再执行。**若用户明确说改的是网页端草稿，必须改用 `--draft-id <草稿id> --publish --yes`**——默认的 `--publish --yes` 每次都会先重建草稿，用本地 md 覆盖网页端修改；`--draft-id` 模式跳过重建，正文以网页端为准（本地 md 只提供分类/标签/摘要/封面）。拿不准改的是哪一边时，先问用户，不要用文件 mtime 推断。
@@ -100,7 +113,8 @@ agent_created: true
 |---|---|
 | `check.mjs` 报会话失效 | 重新 `login.mjs`（Cookie 约 30 天过期） |
 | 分类/标签解析失败 | 跑 `tags.mjs` 更新缓存，核对名称大小写 |
-| `brief_content` 相关报错 | 摘要长度不在 50–100，用 `--brief` 显式提供 |
+| `brief_content` 相关报错 | 摘要长度不在 50–100，用 `--description` 或 frontmatter 的 `description` 显式提供 |
+| frontmatter 报告缺字段 | 按报告里的「建议 / 可粘贴片段」自行补到文章头部（脚本不会改写文件）；或用 `--require a,b` 收窄本次检查项；`--no-frontmatter-check` 可完全跳过 |
 | 图片上传 `err_no != 0` / 404 | 现行 ImageX 三段式已实现（见 API 参考）；`MismatchChecksum` = 缺 `Content-CRC32` 头；`201007 bad gateway` = Commit 偶发后端故障，脚本已自动重试一次 |
 | 存在图片上传失败被中止 | 按报错修正 md（路径不存在/超限/扩展名不支持），或 `--no-upload` 跳过自动上传 |
 | 登录弹窗被拦截 | 设置环境变量 `JUEJIN_CHROME_PATH` 指向本机 Chromium/Chrome 可执行文件（如 Windows 的 chrome.exe）；未设置时脚本会按平台自动扫描 Playwright 缓存，仍失败则由 Playwright 默认解析 |

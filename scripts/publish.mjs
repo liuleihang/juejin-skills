@@ -4,7 +4,8 @@
 //   node scripts/publish.mjs article.md --publish --yes       # 公开发布（必须双标志同时给出）
 //   node scripts/publish.mjs article.md --draft-id <草稿id> --publish --yes
 //         # 发布「网页端已改过的草稿」：跳过重建草稿，正文以网页端为准（md 仅提供分类/标签/摘要/封面）
-// 可选参数：--brief "摘要" --category 前端 --tag "Vue.js,前端" --cover <url> --dry-run --no-upload
+// 可选参数：--description "摘要" --brief "摘要"(legacy) --category 前端 --tag "Vue.js,前端" --cover <url> --dry-run --no-upload
+//          --require a,b --no-frontmatter-check --strict-frontmatter
 // 优先级：CLI 参数 > 文章 frontmatter > config 默认值（~/.juejin/config.json）
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +15,7 @@ import {
 } from './config.mjs';
 import { scanLocalImages, uploadAndRewrite } from './upload-images.mjs';
 import { loadTagCache } from './tags.mjs';
+import { parseFrontmatter, normalizeMeta, splitTags, checkFrontmatter, formatReport } from './frontmatter.mjs';
 
 const MAX_MD_SIZE = 2 * 1024 * 1024; // 2 MiB，防御异常大文件
 
@@ -26,6 +28,10 @@ function parseArgs(argv) {
     else if (a === '--yes') args.yes = true;
     else if (a === '--dry-run') args.dryRun = true;
     else if (a === '--brief') args.brief = argv[++i];
+    else if (a === '--description') args.description = argv[++i];
+    else if (a === '--require') args.requireFields = String(argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--no-frontmatter-check') args.noFrontmatterCheck = true;
+    else if (a === '--strict-frontmatter') args.strictFrontmatter = true;
     else if (a === '--category') args.category = argv[++i];
     else if (a === '--cover') args.cover = argv[++i];
     else if (a === '--draft-id') args.draftId = argv[++i];
@@ -36,26 +42,12 @@ function parseArgs(argv) {
   return args;
 }
 
-// ---------- frontmatter 解析（支持 title/brief/category/tags/cover） ----------
-function parseFrontmatter(md) {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(md);
-  const meta = {};
-  let body = md;
-  if (m) {
-    for (const line of m[1].split(/\r?\n/)) {
-      const kv = /^(\w[\w-]*):\s*(.*)$/.exec(line.trim());
-      if (kv) meta[kv[1].toLowerCase()] = kv[2].trim().replace(/^["']|["']$/g, '');
-    }
-    body = md.slice(m[0].length);
-  }
-  return { meta, body };
-}
-
 // ---------- 摘要：50-100 字硬性要求（上下限读 config），自动从正文收集 ----------
+// 规范字段为 description；summary / brief 由 frontmatter.mjs 的 normalizeMeta 折叠为别名。
 function buildBrief(meta, args, body) {
   const min = CFG.defaults.briefMin;
   const max = CFG.defaults.briefMax;
-  let brief = args.brief || meta.brief || meta.brief_content || meta.description || '';
+  let brief = args.description || args.brief || meta.description || meta.brief || meta.summary || meta.brief_content || '';
   brief = brief.trim();
   if (brief.length < min) {
     // 从正文补齐：去掉 Markdown 符号，按段落收集到下限
@@ -83,7 +75,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const file = args._[0];
   if (!file) {
-    console.error('用法：node scripts/publish.mjs <article.md> [--publish --yes] [--draft-id <草稿id>] [--brief 摘要] [--category 前端] [--tag "A,B"] [--cover url] [--dry-run] [--no-upload]');
+    console.error('用法：node scripts/publish.mjs <article.md> [--publish --yes] [--draft-id <草稿id>] [--description 摘要] [--brief 摘要] [--category 前端] [--tag "A,B"] [--cover url] [--dry-run] [--no-upload] [--require a,b] [--no-frontmatter-check] [--strict-frontmatter]');
     process.exit(1);
   }
 
@@ -101,7 +93,24 @@ async function main() {
   if (stat.size > MAX_MD_SIZE) throw new Error(`文件超过 2MiB（${stat.size} 字节），请拆分后发布`);
   const md = fs.readFileSync(abs, 'utf8');
 
-  const { meta, body } = parseFrontmatter(md);
+  // 元数据格式检查：默认仅提示 + 给建议，绝不改写用户文章；strict 下缺失即中止。
+  // 必须放在任何网络请求之前，--dry-run / --draft-id 同样受检。
+  if (!args.noFrontmatterCheck && CFG.frontmatter.enabled) {
+    const required = args.requireFields
+      ? args.requireFields.map((k) => CFG.frontmatter.required.find((f) => f.key === k)
+          || { key: k, label: k, aliases: [], suggestion: '', example: `${k}: `, publish: false })
+      : undefined;
+    const report = checkFrontmatter(md, { required });
+    console.log(formatReport(report));
+    if (report.missingCount && (args.strictFrontmatter || CFG.frontmatter.strict)) {
+      console.error('[publish] ✗ frontmatter 缺失必填字段，已中止；补齐后重试，或用 --no-frontmatter-check 跳过');
+      process.exit(2);
+    }
+  }
+
+  const parsed = parseFrontmatter(md);
+  const meta = normalizeMeta(parsed.meta);
+  const body = parsed.body;
 
   // 标题：CLI/frontmatter 均未提供时取正文首个一级标题
   let title = args._[1] || meta.title || '';
@@ -115,7 +124,7 @@ async function main() {
   console.log(`[publish] 标题：${title}`);
   console.log(`[publish] 摘要（${brief.length} 字）：${brief}`);
   if (brief.length < CFG.defaults.briefMin) {
-    console.warn(`[publish] ⚠️ 摘要不足 ${CFG.defaults.briefMin} 字，掘金接口可能拒绝；建议用 --brief 显式提供 ${CFG.defaults.briefMin}-${CFG.defaults.briefMax} 字摘要`);
+    console.warn(`[publish] ⚠️ 摘要不足 ${CFG.defaults.briefMin} 字，掘金接口可能拒绝；建议用 --description 或 frontmatter 的 description 显式提供 ${CFG.defaults.briefMin}-${CFG.defaults.briefMax} 字摘要`);
   }
   if (useExistingDraft) {
     console.log(`[publish] --draft-id 模式：跳过本地图片上传与正文改写，发布正文以网页端草稿 ${args.draftId} 为准`);
@@ -138,7 +147,7 @@ async function main() {
   if (!cat && !args.dryRun) {
     throw new Error(`未找到分类「${categoryName}」。请运行：node scripts/tags.mjs 查看全部分类，并核对分类名称`);
   }
-  const tagNames = args.tags || (meta.tags ? String(meta.tags).split(',') : []);
+  const tagNames = args.tags || splitTags(meta.tags);
   const pickTagList = (c) => c.tagsByCategory[cat ? cat.id : ''] || [];
   const tagIds = [];
   for (const n of tagNames.filter(Boolean)) {

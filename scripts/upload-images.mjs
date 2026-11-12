@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { isMain } from './is-main.mjs';
 import {
   CFG, DEFAULT_HEADERS, loadCookies, cookiesToHeader, ensureSessionDir,
 } from './config.mjs';
@@ -254,8 +254,7 @@ async function main() {
 }
 
 // 仅直接运行时执行 CLI（被 import 时不触发）
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) main().catch((err) => {
+if (isMain(import.meta.url)) main().catch((err) => {
   console.error('[upload] 失败：', err.message);
   process.exit(1);
 });

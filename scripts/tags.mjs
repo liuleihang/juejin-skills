@@ -4,8 +4,7 @@
 // 供 publish.mjs 复用：refreshTagCache()（强制重建缓存）/ loadTagCache()（带过期自动刷新）
 import { api, cookiesToHeader, loadCookies, TAG_CACHE_FILE, ensureSessionDir } from './config.mjs';
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isMain } from './is-main.mjs';
 
 const CATEGORY_BRIEFS_URL = 'https://api.juejin.cn/tag_api/v1/query_category_briefs';
 const TAG_LIST_URL = 'https://api.juejin.cn/tag_api/v1/query_tag_list';
@@ -112,8 +111,7 @@ async function main() {
 }
 
 // 仅当作为 CLI 直接运行时才执行 main（被 publish.mjs import 时绝不触发）
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) {
+if (isMain(import.meta.url)) {
   main().catch((err) => {
     console.error('[tags] 请求失败：', err.message);
     process.exit(1);

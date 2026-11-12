@@ -26,6 +26,29 @@ const DEFAULTS = {
     defaultLimit: 20,        // 默认展示条数
     maxLimit: 50,            // 综合榜单次最多返回 50 条，防误设超限
   },
+  frontmatter: {
+    // 文章 frontmatter 规范字段（与 hone-blog 统一）：key 为权威名，aliases 为兼容别名。
+    // 用户可在 ~/.juejin/config.json 整体替换 required 数组，自定义必填项/别名/建议文案。
+    enabled: true,           // false = publish.mjs 不再输出检查报告
+    strict: false,           // true = 缺失即中止发布（exit 2）；false = 仅提示
+    required: [
+      { key: 'title', label: '标题', aliases: ['name', 'headline'], publish: true,
+        suggestion: '缺失时脚本会取正文首个 # 一级标题；建议显式给出，避免与 H1 不一致',
+        example: 'title: 文章标题' },
+      { key: 'date', label: '时间', aliases: ['created', 'created_at', 'publish_date'], publish: false,
+        suggestion: '建议用 YYYY-MM-DD；仅作本地归档/写作规范，掘金发布接口不使用该字段',
+        example: 'date: YYYY-MM-DD' },
+      { key: 'description', label: '摘要', aliases: ['summary', 'brief', 'brief_content', 'abstract', 'excerpt'], publish: true,
+        suggestion: '掘金要求摘要 50–100 字；summary / brief 均为兼容别名',
+        example: 'description: 一句话概括本文，50–100 字' },
+      { key: 'category', label: '分类', aliases: ['cate', 'categories'], publish: true,
+        suggestion: '须是掘金分类缓存中存在的名称，如 前端 / 后端 / 人工智能',
+        example: 'category: 前端' },
+      { key: 'tags', label: '标签', aliases: ['tag', 'keywords'], publish: true,
+        suggestion: 'YAML 数组 [a, b] 或逗号串 a,b 均可，须是掘金已有标签',
+        example: 'tags: [AI编程, Node.js]' },
+    ],
+  },
   imageUpload: {
     // 2026-10-23 Playwright 实测：字节 ImageX 三段式上传链路（旧单接口 images_upload/v1/create 已下线）
     genToken: 'https://api.juejin.cn/imagex/v2/gen_token',
@@ -54,6 +77,7 @@ function loadUserConfig() {
     merged.imageUpload = { ...DEFAULTS.imageUpload, ...(raw.imageUpload || {}) };
     merged.tagCache = { ...DEFAULTS.tagCache, ...(raw.tagCache || {}) };
     merged.hot = { ...DEFAULTS.hot, ...(raw.hot || {}) };
+    merged.frontmatter = { ...DEFAULTS.frontmatter, ...(raw.frontmatter || {}) };
     return merged;
   } catch {
     return DEFAULTS; // 无配置文件时使用默认值

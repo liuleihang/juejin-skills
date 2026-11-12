@@ -5,9 +5,8 @@
 //   node scripts/hot.mjs --category 前端 --limit 10
 //   node scripts/hot.mjs --json                    # JSON 输出（供 Agent / 管道消费）
 //   node scripts/hot.mjs --categories             # 列出可用分类
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { api, CFG, ENDPOINTS } from './config.mjs';
+import { isMain } from './is-main.mjs';
 
 const GENERAL_ID = '1'; // 综合榜约定值，不在 query_category_briefs 返回列表中
 const POST_BASE = 'https://juejin.cn/post/';
@@ -116,9 +115,8 @@ async function main() {
     : formatText(items, { name: cat.name, type: args.type }));
 }
 
-// 被 import 时不触发 CLI（同 tags.mjs 的 isMain 守卫）
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) {
+// 被 import 时不触发 CLI
+if (isMain(import.meta.url)) {
   main().catch((err) => {
     console.error('[hot] 请求失败：', err.message);
     console.error('非官方接口可能变更；若持续失败请抓包核对端点。');
